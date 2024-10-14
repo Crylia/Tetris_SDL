@@ -1,14 +1,1 @@
-# TODO
-
-## Needs
-
-- Input handler
-- Collision
-- Playing Field
-- Scoreboard
-
-## Optional
-
-- Start Page
-- Textures
-- Audio
+# Tetris written in SDL2 and C++
