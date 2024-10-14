@@ -19,6 +19,8 @@ bool Game::init(const char* title, int w, int h) {
 		return false;
 	}
 
+	SDL_SetWindowMinimumSize(window.get( ), 800, 650);
+
 	renderer = std::shared_ptr<SDL_Renderer>(
 		SDL_CreateRenderer(window.get( ), -1, SDL_RENDERER_ACCELERATED),
 		[ ](SDL_Renderer* r) { SDL_DestroyRenderer(r); }
@@ -28,11 +30,15 @@ bool Game::init(const char* title, int w, int h) {
 		SDL_Log("Failed to create renderer: %s", SDL_GetError( ));
 		return false;
 	}
+	int ww, wh;
+	SDL_GetWindowSize(window.get( ), &ww, &wh);
 
-	gameRenderer = make_shared<Renderer>(renderer);
+	gameRenderer = make_shared<Renderer>(renderer, ww, wh);
 	gameBoard = make_shared<GameBoard>( );
 
-	bgm = std::shared_ptr<Mix_Music>(Mix_LoadMUS("/home/crylia/Dokumente/git/tetris_sdl/assets/bgm.mp3"), [ ](Mix_Music* m) {
+	handleWindowResize( );
+
+	bgm = std::shared_ptr<Mix_Music>(Mix_LoadMUS("assets/bgm.mp3"), [ ](Mix_Music* m) {
 		Mix_FreeMusic(m);
 		});
 
@@ -73,7 +79,10 @@ void Game::run( ) {
 void Game::inputHandler( ) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		if (event.type == SDL_QUIT) { SDL_Quit( ); } else if (event.type == SDL_KEYDOWN) {
+		if (event.type == SDL_QUIT) {
+			SDL_Quit( );
+			quit = true;
+		} else if (event.type == SDL_KEYDOWN) {
 			switch (event.key.keysym.sym) {
 			case SDLK_LEFT:
 			case SDLK_a:
@@ -106,8 +115,23 @@ void Game::inputHandler( ) {
 			default:
 				break;
 			}
+		} else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+			handleWindowResize( );
 		}
 	}
+}
+
+void Game::handleWindowResize( ) {
+	int windowWidth, windowHeight;
+	SDL_GetWindowSize(window.get( ), &windowWidth, &windowHeight);
+
+	gameRenderer->setBlockSize(windowHeight / gameBoard->getLockedTetrominos( ).size( ));
+
+	int offsetX = (windowWidth - gameBoard->getLockedTetrominos( )[0].size( ) * gameRenderer->getBlockSize( )) / 2;
+	int offsetY = (windowHeight - gameBoard->getLockedTetrominos( ).size( ) * gameRenderer->getBlockSize( )) / 2;
+	gameRenderer->setOffset(offsetX, offsetY);
+
+	gameRenderer->setWindowSize(windowWidth, windowHeight);
 }
 
 void Game::update( ) {
@@ -122,7 +146,7 @@ void Game::update( ) {
 
 void Game::render( ) {
 	//Set default color to black
-	SDL_SetRenderDrawColor(renderer.get( ), 20, 20, 20, 255);
+	SDL_SetRenderDrawColor(renderer.get( ), 248, 248, 248, 255);
 	SDL_RenderClear(renderer.get( ));
 
 	gameRenderer->renderBoard(*gameBoard);

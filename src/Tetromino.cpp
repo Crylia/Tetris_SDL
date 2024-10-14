@@ -1,7 +1,7 @@
 #include "Tetromino.hpp"
 #include "GameBoard.hpp"
-
-Tetromino::Tetromino(TetrominoShape shape) : x(0), y(0) {
+#include <iostream>
+Tetromino::Tetromino(TetrominoShape shape) : x(0), y(0), textureShape(shape) {
 	initializeShape(shape);
 	currentRotationState = 1;
 
@@ -16,29 +16,44 @@ Tetromino::Tetromino(TetrominoShape shape) : x(0), y(0) {
 
 	switch (dist6(rng)) {
 	case 0:
-		color.r = 255;
+		color.r = 0;
+		color.g = 191;
+		color.b = 255;
 		break;
 	case 1:
-		color.g = 255;
+		color.r = 255;
+		color.g = 215;
+		color.b = 0;
 		break;
 	case 2:
-		color.b = 255;
+		color.r = 138;
+		color.g = 43;
+		color.b = 226;
 		break;
 	case 3:
-		color.r = 255;
-		color.g = 255;
+		color.r = 0;
+		color.g = 204;
+		color.b = 102;
 		break;
 	case 4:
-		color.g = 255;
-		color.b = 255;
+		color.r = 255;
+		color.g = 69;
+		color.b = 0;
 		break;
 	case 5:
+		color.r = 30;
+		color.g = 144;
 		color.b = 255;
+		break;
+	case 6:
 		color.r = 255;
+		color.g = 140;
+		color.b = 0;
 		break;
 	default:
 		break;
 	}
+
 }
 
 void Tetromino::initializeShape(TetrominoShape s) {
@@ -60,6 +75,9 @@ void Tetromino::initializeShape(TetrominoShape s) {
 		break;
 	case TetrominoShape::L:
 		shape = { {0, 0, 1}, {1, 1, 1} };
+		break;
+	case TetrominoShape::T:
+		shape = { {1, 1, 1}, {0, 1, 0} };
 		break;
 	default:
 		shape = { {0} };
@@ -102,11 +120,9 @@ double Tetromino::getRotationAngle( ) const {
 }
 
 const vector<vector<int>>& Tetromino::getShape( ) const { return shape; }
+const TetrominoShape Tetromino::getShapeEnumn( ) const { return textureShape; }
 
 int Tetromino::getX( ) const { return x; }
 int Tetromino::getY( ) const { return y; }
-
-void Tetromino::setTexture(const TetrominoShape shape) { this->textureShape = shape; }
-const TetrominoShape Tetromino::getTexture( ) const { return textureShape; }
 
 SDL_Color Tetromino::getColor( ) const { return color; }

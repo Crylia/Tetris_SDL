@@ -2,7 +2,7 @@
 #include <iostream>
 
 GameBoard::GameBoard( )
-	: lockedTetrominos(20, vector<int>(10, 0)), lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 0 })), score(0), level(1), collision(false) {
+	: lockedTetrominos(20, vector<int>(10, 0)), lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(1), collision(false) {
 	spawnNewTetromino( );
 }
 
@@ -41,37 +41,86 @@ bool GameBoard::checkCollision(const Tetromino& tetromino) const {
 void GameBoard::lockTetromino( ) {
 	const auto& shape = currentTetromino->getShape( );
 	int x = currentTetromino->getX( ), y = currentTetromino->getY( );
+	double angle = currentTetromino->getRotationAngle( );
+	TetrominoShape tetrominoShape = currentTetromino->getShapeEnumn( );
 
-	for (int row = 0; row < shape.size( ); ++row)
-		for (int col = 0; col < shape[row].size( ); ++col)
-			if (shape[row][col] != 0) {
+	if (tetrominoShape == TetrominoShape::I) {
+		if (angle == 90 || angle == 270) {
+			for (int col = 0; col < shape[0].size( ); ++col) {
 				int lockedTetrominosX = x + col;
-				int lockedTetrominosY = y + row;
-				if (lockedTetrominosY >= 0 && lockedTetrominosX < height) {
-					lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = 1;
+				int lockedTetrominosY = y;
+
+				if (lockedTetrominosY >= 0 && lockedTetrominosX >= 0 && lockedTetrominosX < width) {
+					if (col == 0) {
+						lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_ENDR) + 1;
+					} else if (col == 3) {
+						lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_STARTR) + 1;
+					} else {
+						lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_MIDR) + 1;
+					}
 					lockedColors[lockedTetrominosY][lockedTetrominosX] = currentTetromino->getColor( );
 				}
 			}
+		} else {
+			for (int row = 0; row < shape.size( ); ++row) {
+				for (int col = 0; col < shape[row].size( ); ++col) {
+					if (shape[row][col] != 0) {
+						int lockedTetrominosX = x;
+						int lockedTetrominosY = y + row;
+
+						if (lockedTetrominosY >= 0 && lockedTetrominosX >= 0 && lockedTetrominosX < width && lockedTetrominosY < height) {
+							if (row == 0) {
+								lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_END) + 1;
+							} else if (row == 3) {
+								lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_START) + 1;
+							} else {
+								lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(TetrominoShape::I_MID) + 1;
+							}
+							lockedColors[lockedTetrominosY][lockedTetrominosX] = currentTetromino->getColor( );
+						}
+					}
+				}
+			}
+		}
+	} else {
+		for (int row = 0; row < shape.size( ); ++row) {
+			for (int col = 0; col < shape[row].size( ); ++col) {
+				if (shape[row][col] != 0) {
+					int lockedTetrominosX = x + col;
+					int lockedTetrominosY = y + row;
+
+					if (lockedTetrominosY >= 0 && lockedTetrominosX >= 0 && lockedTetrominosX < width && lockedTetrominosY < height) {
+						lockedTetrominos[lockedTetrominosY][lockedTetrominosX] = static_cast<int>(tetrominoShape) + 1;
+						lockedColors[lockedTetrominosY][lockedTetrominosX] = currentTetromino->getColor( );
+					}
+				}
+			}
+		}
+	}
 }
 
 void GameBoard::clearLines( ) {
-	for (int row = 0; row < height; row++)
-		if (all_of(lockedTetrominos[row].begin( ), lockedTetrominos[row].end( ), [ ](int cell) {return cell != 0;})) {
+	for (int row = 0; row < height; row++) {
+		if (all_of(lockedTetrominos[row].begin( ), lockedTetrominos[row].end( ), [ ](int cell) { return cell != 0; })) {
 			lockedTetrominos.erase(lockedTetrominos.begin( ) + row);
-			lockedTetrominos.insert(lockedTetrominos.begin( ), vector<int>(width, 0));
-			score += 100;
-			if ((score % 1000) == 0)
-				level++;
-		}
-}
+			lockedColors.erase(lockedColors.begin( ) + row);
 
+			lockedTetrominos.insert(lockedTetrominos.begin( ), vector<int>(width, 0));
+			lockedColors.insert(lockedColors.begin( ), vector<SDL_Color>(width, { 0, 0, 0, 0 }));
+
+			score += 100;
+			if (score % 1000 == 0) {
+				level++;
+			}
+		}
+	}
+}
 void GameBoard::spawnNewTetromino( ) {
 	random_device dev;
 	mt19937 rng(dev( ));
 	uniform_int_distribution<mt19937::result_type> dist6(0, static_cast<int>(TetrominoShape::COUNT) - 1);
 	TetrominoShape shape = static_cast<TetrominoShape>(dist6(rng));
 	currentTetromino = make_unique<Tetromino>(shape);
-	currentTetromino->setTexture(shape);
 	currentTetromino->move(width / 2 - 1, 0);
 
 	if (checkCollision(*currentTetromino))
@@ -117,4 +166,5 @@ void GameBoard::reset( ) {
 	lockedColors.clear( );
 	score = 0;
 	level = 1;
+	collision = false;
 }

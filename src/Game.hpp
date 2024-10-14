@@ -18,6 +18,8 @@ private:
 	void render( );
 	void inputHandler( );
 
+	void handleWindowResize( );
+
 	unique_ptr<SDL_Window, void(*)(SDL_Window*)> window;
 	shared_ptr<SDL_Renderer> renderer;
 

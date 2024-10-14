@@ -30,7 +30,7 @@ target_link_libraries(SDL_TD
 )
 
 file(GLOB ASSETS
-	"assets/*.png"
+	"assets/*"
 )
 
 foreach(ASSET ${ASSETS})

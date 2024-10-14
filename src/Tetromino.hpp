@@ -17,7 +17,14 @@ enum class TetrominoShape {
 	S,
 	Z,
 	J,
-	COUNT //Used to know the ammount of shapes
+	T,
+	COUNT, //Used to know the ammount of shapes
+	I_END,
+	I_START,
+	I_MID,
+	I_ENDR,
+	I_STARTR,
+	I_MIDR,
 };
 
 class GameBoard;
@@ -42,10 +49,9 @@ public:
 	double getRotationAngle( ) const;
 
 	const vector<vector<int>>& getShape( ) const;
+	const TetrominoShape getShapeEnumn( ) const;
 	int getX( ) const;
 	int getY( ) const;
 
-	void setTexture(const TetrominoShape textureName);
-	const TetrominoShape getTexture( ) const;
 	SDL_Color getColor( ) const;
 };
