@@ -35,7 +35,7 @@ private:
 	void drawGrid(const GameBoard& gameBoard);
 	void drawLockedBlocks(const GameBoard& gameBoard);
 	void drawTetromino(const Tetromino& tetromino);
-	void drawScoreboard(int score, int level);
+	void drawScoreboard(int score, int level, int lines);
 
 	TetrisAssets shapeToAsset(const TetrominoShape shape);
 
@@ -58,8 +58,10 @@ public:
 	bool loadTexture(const string& filePath, const TetrisAssets shape);
 	void renderTexture(const TetrisAssets shape, int x, int y, int width, int height);
 	void renderStartScreen( );
-	void renderGameOver(int score, int level);
+	void renderGameOver(int score, int level, int lines);
 	void renderText(string text, int x, int y, int size, SDL_Color color);
+	void renderRightAlignedText(const std::string& text, int x, int y, int fontSize, const SDL_Color& color);
+	void renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino);
 
 	const int getBlockSize( ) const;
 	void setBlockSize(int newBlockSize);

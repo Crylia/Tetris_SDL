@@ -28,13 +28,68 @@ void Renderer::renderBoard(const GameBoard& gameBoard) {
 	drawGrid(gameBoard);
 	drawLockedBlocks(gameBoard);
 	drawTetromino(gameBoard.getCurrentTetromino( ));
-	drawScoreboard(gameBoard.getScore( ), gameBoard.getLevel( ));
+	drawScoreboard(gameBoard.getScore( ), gameBoard.getLevel( ), gameBoard.getLines( ));
 }
 
-void Renderer::drawScoreboard(int score, int level) {
+void Renderer::drawScoreboard(int score, int level, int lines) {
+	int gapSize = blockSize / 8;
+
+	// 6 Because the gameBoard is 10 blocks, half that is 5 + 1 for the wall = 6
+	int blackAreaWidth = (windowWidth / 2) - (blockSize * 6) - gapSize;
+
+	SDL_Rect blackRect = { 0, 0, blackAreaWidth, windowHeight };
 	SDL_SetRenderDrawColor(renderer.get( ), 0, 0, 0, 255);
-	renderText(fmt::format("Score: {0}", score), 350, 100, 24, SDL_Color{ 200,128,200 });
-	renderText(fmt::format("Level: {0}", level), 350, 200, 24, SDL_Color{ 128,200,200 });
+	SDL_RenderFillRect(renderer.get( ), &blackRect);
+
+	SDL_Surface* scoreboardSurface = IMG_Load("assets/scoreboard.png");
+	if (!scoreboardSurface) {
+		SDL_Log("Failed to load title surface: %s", SDL_GetError( ));
+		return;
+	}
+
+	auto scoreboardTexture = SDL_CreateTextureFromSurface(renderer.get( ), scoreboardSurface);
+	SDL_FreeSurface(scoreboardSurface);
+	if (!scoreboardTexture) {
+		SDL_Log("Failed to create title texture: %s", SDL_GetError( ));
+		return;
+	}
+
+	int width, height;
+	SDL_QueryTexture(scoreboardTexture, nullptr, nullptr, &width, &height);
+
+	int scoreboardWidth = static_cast<int>(width * static_cast<float>(windowHeight) / height);
+
+	SDL_Rect scoreboardRect = {
+			windowWidth - scoreboardWidth,
+			0,
+			scoreboardWidth,
+			windowHeight
+	};
+
+
+	SDL_RenderCopy(renderer.get( ), scoreboardTexture, nullptr, &scoreboardRect);
+	SDL_DestroyTexture(scoreboardTexture);
+
+	renderRightAlignedText(fmt::format("{0}", score), windowWidth - 30, 97, 32, SDL_Color{ 0,0,0 });
+	renderText(fmt::format("{0}", level), windowWidth - 92, 230, 32, SDL_Color{ 0,0,0 });
+	renderText(fmt::format("{0}", lines), windowWidth - 92, 330, 32, SDL_Color{ 0,0,0 });
+}
+
+void Renderer::renderRightAlignedText(const std::string& text, int x, int y, int fontSize, const SDL_Color& color) {
+	TTF_Font* font = TTF_OpenFont("assets/tetris-gb.ttf", fontSize);
+	if (!font) {
+		SDL_Log("Failed to open font: %s", TTF_GetError( ));
+		return;
+	}
+
+	int textWidth;
+	TTF_SizeText(font, text.c_str( ), &textWidth, nullptr);
+
+	int rightAlignedX = x - textWidth;
+
+	renderText(text, rightAlignedX, y, fontSize, color);
+
+	TTF_CloseFont(font);
 }
 
 void Renderer::drawGrid(const GameBoard& board) {
@@ -46,6 +101,9 @@ void Renderer::drawGrid(const GameBoard& board) {
 
 	int totalWidth = w * blockSize;
 	int totalHeight = h * blockSize;
+
+	SDL_SetTextureBlendMode(textures[TetrisAssets::BORDER], SDL_BLENDMODE_BLEND);
+	SDL_SetTextureColorMod(textures[TetrisAssets::BORDER], 165, 42, 42);
 
 	for (int y = 0; y < (h + (innerBorderThickness * h)); ++y) {
 		SDL_Rect leftBlock = { offsetX - blockSize, offsetY + y * blockSize, blockSize, blockSize };
@@ -130,33 +188,25 @@ void Renderer::drawTetromino(const Tetromino& tetromino) {
 	SDL_SetTextureColorMod(textures[shapeToAsset(tetrominoShape)], color.r, color.g, color.b);
 
 	if (tetrominoShape == TetrominoShape::I) {
-		SDL_SetTextureColorMod(textures[TetrisAssets::I_START], color.r, color.g, color.b);
-		SDL_SetTextureColorMod(textures[TetrisAssets::I_MID], color.r, color.g, color.b);
-		SDL_SetTextureColorMod(textures[TetrisAssets::I_END], color.r, color.g, color.b);
-
-		if (angle == 90) {
+		if (angle == 90 || angle == 270) {
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_STARTR], color.r, color.g, color.b);
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_MIDR], color.r, color.g, color.b);
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_ENDR], color.r, color.g, color.b);
 			for (int i = 0; i < 4; ++i) {
 				SDL_Rect destRect = { offsetX + (x + i) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-				SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_MID], nullptr, &destRect, angle, nullptr, SDL_FLIP_NONE);
+				SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_MIDR], nullptr, &destRect);
 			}
 
 			SDL_Rect startRect = { offsetX + (x + 0) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-			SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_START], nullptr, &startRect, angle, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_ENDR], nullptr, &startRect);
 
 			SDL_Rect endRect = { offsetX + (x + 3) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-			SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_END], nullptr, &endRect, angle, nullptr, SDL_FLIP_NONE);
-		} else if (angle == 270) {
-			for (int i = 0; i < 4; ++i) {
-				SDL_Rect destRect = { offsetX + (x + i) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-				SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_MID], nullptr, &destRect, angle, nullptr, SDL_FLIP_NONE);
-			}
-
-			SDL_Rect startRect = { offsetX + (x + 0) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-			SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_END], nullptr, &startRect, angle, nullptr, SDL_FLIP_NONE);
-
-			SDL_Rect endRect = { offsetX + (x + 3) * blockSize, offsetY + y * blockSize, blockSize, blockSize };
-			SDL_RenderCopyEx(renderer.get( ), textures[TetrisAssets::I_START], nullptr, &endRect, angle, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_STARTR], nullptr, &endRect);
 		} else {
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_START], color.r, color.g, color.b);
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_MID], color.r, color.g, color.b);
+			SDL_SetTextureColorMod(textures[TetrisAssets::I_END], color.r, color.g, color.b);
+
 			SDL_Rect destRect1 = { offsetX + (x + 0) * blockSize, offsetY + (y + 0) * blockSize, blockSize, blockSize };
 			SDL_Rect destRect2 = { offsetX + (x + 0) * blockSize, offsetY + (y + 1) * blockSize, blockSize, blockSize };
 			SDL_Rect destRect3 = { offsetX + (x + 0) * blockSize, offsetY + (y + 2) * blockSize, blockSize, blockSize };
@@ -274,23 +324,68 @@ void Renderer::renderStartScreen( ) {
 	TTF_SizeText(font, "PRESS START", &w, &h);
 	TTF_CloseFont(font);
 
-	renderText("press G to start", (windowWidth / 2) - (w / 2), windowHeight - 100, 16, SDL_Color{ 0, 0, 0 });
+	renderText("press G to start", (windowWidth / 2) - (w / 2), windowHeight - 70, 16, SDL_Color{ 0, 0, 0 });
 
 	SDL_RenderPresent(renderer.get( ));
 }
 
+void Renderer::renderGameOver(int score, int level, int lines) {
+	int fontSize = 24;
+	int lineSpacing = fontSize + 10;
 
+	int totalHeight = 5 * lineSpacing;
 
-void Renderer::renderGameOver(int score, int level) {
-	SDL_SetRenderDrawColor(renderer.get( ), 0, 0, 0, 128);
-	SDL_RenderClear(renderer.get( ));
+	int centerX = (windowWidth / 2);
+	int centerY = (windowHeight / 2) - (totalHeight / 2);
 
-	renderText("Game Over", 100, 100, 128, SDL_Color{ 200, 200, 200 });
-	renderText(fmt::format("Score: {0}", score), 100, 250, 64, SDL_Color{ 200, 128, 200 });
-	renderText(fmt::format("Level: {0}", level), 100, 350, 64, SDL_Color{ 128, 200, 200 });
-
+	renderText("game", centerX, centerY, fontSize, SDL_Color{ 0, 0, 0 });
+	renderText("over", centerX, centerY + lineSpacing, fontSize, SDL_Color{ 0, 0, 0 });
+	renderText("please", centerX, centerY + 2 * lineSpacing, fontSize, SDL_Color{ 0, 0, 0 });
+	renderText("try", centerX, centerY + 3 * lineSpacing, fontSize, SDL_Color{ 0, 0, 0 });
+	renderText("again @", centerX, centerY + 4 * lineSpacing, fontSize, SDL_Color{ 0, 0, 0 });
 
 	SDL_RenderPresent(renderer.get( ));
+}
+
+void Renderer::renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino) {
+	const auto& shape = nextTetromino->getShape( );
+	int x = nextTetromino->getX( ), y = nextTetromino->getY( );
+
+	double angle = nextTetromino->getRotationAngle( );
+
+	TetrominoShape tetrominoShape = nextTetromino->getShapeEnumn( );
+
+	SDL_SetTextureBlendMode(textures[shapeToAsset(tetrominoShape)], SDL_BLENDMODE_BLEND);
+	SDL_Color color = nextTetromino->getColor( );
+	SDL_SetTextureColorMod(textures[shapeToAsset(tetrominoShape)], color.r, color.g, color.b);
+
+	if (tetrominoShape == TetrominoShape::I) {
+		SDL_SetTextureColorMod(textures[TetrisAssets::I_STARTR], color.r, color.g, color.b);
+		SDL_SetTextureColorMod(textures[TetrisAssets::I_MIDR], color.r, color.g, color.b);
+		SDL_SetTextureColorMod(textures[TetrisAssets::I_ENDR], color.r, color.g, color.b);
+
+		for (int i = 0; i < 4; ++i) {
+			SDL_Rect destRect = { (windowWidth - 155) + (x + i) * blockSize, (windowHeight - 120) + y * blockSize, blockSize, blockSize };
+			SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_MIDR], nullptr, &destRect);
+		}
+
+		SDL_Rect startRect = { (windowWidth - 155) + (x + 0) * blockSize, (windowHeight - 120) + y * blockSize, blockSize, blockSize };
+		SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_ENDR], nullptr, &startRect);
+
+		SDL_Rect endRect = { (windowWidth - 155) + (x + 3) * blockSize, (windowHeight - 120) + y * blockSize, blockSize, blockSize };
+		SDL_RenderCopy(renderer.get( ), textures[TetrisAssets::I_STARTR], nullptr, &endRect);
+
+	} else {
+		for (int row = 0; row < shape.size( ); ++row) {
+			for (int col = 0; col < shape[row].size( ); ++col) {
+				if (shape[row][col] != 0) {
+					SDL_Rect destRect = { (windowWidth - 140) + col * blockSize, (windowHeight - 130) + row * blockSize, blockSize, blockSize };
+					SDL_Point center = { blockSize / 2, blockSize / 2 };
+					SDL_RenderCopy(renderer.get( ), textures[shapeToAsset(tetrominoShape)], nullptr, &destRect);
+				}
+			}
+		}
+	}
 }
 
 void Renderer::renderText(string text, int x, int y, int size, SDL_Color color) {

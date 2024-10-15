@@ -2,7 +2,7 @@
 #include <iostream>
 
 GameBoard::GameBoard( )
-	: lockedTetrominos(20, vector<int>(10, 0)), lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(1), collision(false) {
+	: lockedTetrominos(20, vector<int>(10, 0)), lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(0), lines(0), collision(false) {
 	spawnNewTetromino( );
 }
 
@@ -20,6 +20,14 @@ void GameBoard::tryRotateCurrentTetromino( ) {
 	if (checkCollision(*currentTetromino))
 		for (int i = 0; i < 3; i++)
 			currentTetromino->rotate(*this);
+	else {
+		Mix_Chunk* rotateSound = Mix_LoadWAV("assets/sound_effects/rotate_piece.wav");
+		if (rotateSound == nullptr)
+			SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
+		else {
+			Mix_PlayChannel(-1, rotateSound, 0);
+		}
+	}
 }
 
 bool GameBoard::checkCollision(const Tetromino& tetromino) const {
@@ -97,9 +105,17 @@ void GameBoard::lockTetromino( ) {
 			}
 		}
 	}
+
+	Mix_Chunk* pieceLanded = Mix_LoadWAV("assets/sound_effects/piece_landed.wav");
+	if (pieceLanded == nullptr)
+		SDL_Log("Failed to play sound effect: %s", Mix_GetError( ));
+	else {
+		Mix_PlayChannel(-1, pieceLanded, 0);
+	}
 }
 
 void GameBoard::clearLines( ) {
+	int clearedLines = 0;
 	for (int row = 0; row < height; row++) {
 		if (all_of(lockedTetrominos[row].begin( ), lockedTetrominos[row].end( ), [ ](int cell) { return cell != 0; })) {
 			lockedTetrominos.erase(lockedTetrominos.begin( ) + row);
@@ -111,20 +127,61 @@ void GameBoard::clearLines( ) {
 			score += 100;
 			if (score % 1000 == 0) {
 				level++;
+				Mix_Chunk* levelUpSound = Mix_LoadWAV("assets/sound_effects/level_up.wav");
+				if (levelUpSound == nullptr)
+					SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
+				else {
+					Mix_PlayChannel(-1, levelUpSound, 0);
+				}
 			}
+			clearedLines++;
+			lines++;
+		}
+	}
+
+	if (clearedLines >= 4) {
+		Mix_Chunk* clearedLinesSound = Mix_LoadWAV("assets/sound_effects/tetris_line_clear.wav");
+		if (clearedLinesSound == nullptr)
+			SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
+		else {
+			Mix_PlayChannel(-1, clearedLinesSound, 0);
+		}
+	} else if (clearedLines > 0) {
+		Mix_Chunk* clearedLinesSound = Mix_LoadWAV("assets/sound_effects/line_clear.wav");
+		if (clearedLinesSound == nullptr)
+			SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
+		else {
+			Mix_PlayChannel(-1, clearedLinesSound, 0);
 		}
 	}
 }
+
 void GameBoard::spawnNewTetromino( ) {
+	//Ensure on startup that we have a tetromino
+	if (!nextTetromino) {
+		random_device dev;
+		mt19937 rng(dev( ));
+		uniform_int_distribution<mt19937::result_type> dist6(0, static_cast<int>(TetrominoShape::COUNT) - 1);
+		TetrominoShape shape = static_cast<TetrominoShape>(dist6(rng));
+
+		nextTetromino = make_shared<Tetromino>(shape);
+	}
+
+	currentTetromino = move(nextTetromino);
+	currentTetromino->move(width / 2 - 1, 0);
+
+	// Generate next tetromino
 	random_device dev;
 	mt19937 rng(dev( ));
 	uniform_int_distribution<mt19937::result_type> dist6(0, static_cast<int>(TetrominoShape::COUNT) - 1);
 	TetrominoShape shape = static_cast<TetrominoShape>(dist6(rng));
-	currentTetromino = make_unique<Tetromino>(shape);
-	currentTetromino->move(width / 2 - 1, 0);
+	nextTetromino = make_shared<Tetromino>(shape);
 
-	if (checkCollision(*currentTetromino))
+	if (checkCollision(*currentTetromino)) {
 		collision = true;
+		lockedTetrominos.clear( );
+		lockedColors.clear( );
+	}
 }
 
 void GameBoard::update( ) {
@@ -132,8 +189,7 @@ void GameBoard::update( ) {
 		lockTetromino( );
 		clearLines( );
 		spawnNewTetromino( );
-	} else
-		clearLines( );
+	}
 }
 
 bool GameBoard::isValidPosition(const vector<vector<int>>& shape, int x, int y) const {
@@ -156,6 +212,9 @@ void GameBoard::moveToBottom( ) {
 const bool GameBoard::isCollision( ) const { return collision; }
 const int GameBoard::getScore( ) const { return score; }
 const int GameBoard::getLevel( ) const { return level; }
+const int GameBoard::getLines( ) const { return lines; }
+const shared_ptr<Tetromino> GameBoard::getNextTetromino( ) const { return nextTetromino; }
+
 
 const vector<vector<int>>& GameBoard::getLockedTetrominos( ) const { return lockedTetrominos; }
 const vector<vector<SDL_Color>>& GameBoard::getLockedColors( ) const { return lockedColors; }

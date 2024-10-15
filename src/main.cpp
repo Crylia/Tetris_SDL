@@ -31,7 +31,7 @@ int main( ) {
 	}
 
 	Game game;
-	if (!game.init("Tetris", 800, 600)) {
+	if (!game.init("Tetris", 810, 600)) {
 		SDL_Log("Failed to init game");
 		SDL_Quit( );
 		return 1;

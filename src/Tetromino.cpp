@@ -1,6 +1,6 @@
 #include "Tetromino.hpp"
 #include "GameBoard.hpp"
-#include <iostream>
+
 Tetromino::Tetromino(TetrominoShape shape) : x(0), y(0), textureShape(shape) {
 	initializeShape(shape);
 	currentRotationState = 1;

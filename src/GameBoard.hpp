@@ -1,5 +1,9 @@
 #pragma once
 
+extern "C" {
+#include <SDL2/SDL_mixer.h>
+}
+
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -14,12 +18,14 @@ private:
 
 	vector<vector<int>> lockedTetrominos;
 	vector<vector<SDL_Color>> lockedColors;
-	unique_ptr<Tetromino> currentTetromino;
+	shared_ptr<Tetromino> currentTetromino;
+	shared_ptr<Tetromino> nextTetromino;
 	const int width = 10;
 	const int height = 20;
 	bool collision;
 	int score;
 	int level;
+	int lines;
 
 public:
 	GameBoard( );
@@ -33,6 +39,8 @@ public:
 	const bool isCollision( ) const;
 	const int getScore( ) const;
 	const int getLevel( ) const;
+	const int getLines( ) const;
+	const shared_ptr<Tetromino> getNextTetromino( ) const;
 
 	const vector<vector<int>>& getLockedTetrominos( ) const;
 	const vector<vector<SDL_Color>>& getLockedColors( ) const;
