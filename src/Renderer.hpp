@@ -77,7 +77,7 @@ public:
 	void renderBoard(const shared_ptr<GameBoard> gameBoard);
 
 	void renderStartScreen( );
-	void renderGameOver(int gbWidth, int gbHeight);
+	void renderGameOver(shared_ptr<GameBoard> gameBoard);
 	const TextDimensions renderText(
 		const string& text, int x, int y, int fontSize,
 		SDL_Color color, HAlign textHAlign = HAlign::LEFT, VAlign textVAlign = VAlign::TOP

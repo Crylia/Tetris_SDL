@@ -7,7 +7,7 @@ bool Game::init(const char* title, int w, int h) {
 		title,
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		w, h,
-		SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
+		SDL_WINDOW_SHOWN
 	));
 
 	if (!window) {
@@ -74,8 +74,10 @@ void Game::run( ) {
 
 	while (gameState.gameover) {
 		if (gameState.quit) return;
+		SDL_SetRenderDrawColor(renderer.get( ), 248, 248, 248, 255);
+		SDL_RenderClear(renderer.get( ));
 		inputHandler( );
-		gameRenderer->renderGameOver(gameBoard->getWidth( ), gameBoard->getHeight( ));
+		gameRenderer->renderGameOver(gameBoard);
 	}
 }
 

@@ -235,9 +235,10 @@ void Renderer::renderStartScreen( ) {
 	SDL_RenderPresent(renderer.get( ));
 }
 
-void Renderer::renderGameOver(int gbWidth, int gbHeight) {
+void Renderer::renderGameOver(const shared_ptr<GameBoard> gameBoard) {
 	//Needed to draw the Walls again
-	drawWall(gbWidth, gbHeight);
+	drawWall(gameBoard->getWidth( ), gameBoard->getHeight( ));
+	drawScoreboard(gameBoard->getScore( ), gameBoard->getLevel( ), gameBoard->getLines( ));
 
 	auto gameOver = unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load("assets/sprites/game_over.png"), SDL_FreeSurface);
 

@@ -7,7 +7,7 @@ GameBoard::GameBoard( )
 }
 
 bool GameBoard::tryMoveCurrentTetromino(int dx, int dy) {
-	if (!currentTetromino) return;
+	if (!currentTetromino) return false;
 	currentTetromino->move(dx, dy);
 	if (checkCollision(*currentTetromino)) {
 		currentTetromino->move(-dx, -dy);

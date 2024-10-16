@@ -1,0 +1,17 @@
+{
+	"name": "Linux Development",
+	"dockerFile": "Dockerfile.linux",
+	"context": "..",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"CMake.configureOnOpen": true
+			},
+			"extensions": [
+				"ms-vscode.cmake-tools",
+				"ms-vscode.cpptools"
+			]
+		}
+	},
+	"postCreateCommand": "cmake . && make"
+}

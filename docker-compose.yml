@@ -1,0 +1,35 @@
+services:
+  linux-build:
+    build:
+      context: .
+      dockerfile: Dockerfile.linux
+    volumes:
+      - .:/project
+    working_dir: /project
+    command: >
+      /bin/bash -c "cmake -B build && cmake --build build"
+
+  linux-run:
+    build:
+      context: .
+      dockerfile: Dockerfile.linux
+    depends_on:
+      - linux-build
+    volumes:
+      - .:/project
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native
+    working_dir: /project/build
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
+    devices:
+      - /dev/snd:/dev/snd
+      - /dev/dri:/dev/dri
+    ipc: host
+    shm_size: '512m'
+    command: >
+      /bin/bash -c "./SDL_TD"
+
+
