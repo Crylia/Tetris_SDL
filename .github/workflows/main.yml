@@ -1,0 +1,60 @@
+name: Build and Run SDL2 Project
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev cmake
+
+      - name: Configure and build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build .
+
+      - name: Run the application
+        run: |
+          cd build
+          ./SDL_TD
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Visual Studio
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Install SDL2
+        run: |
+          choco install sdl2 --version=2.26.5
+          choco install sdl2_mixer --version=2.6.0
+          choco install sdl2_image --version=2.6.0
+          choco install sdl2_ttf --version=2.20.2
+
+      - name: Configure and build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 16 2019" -DCMAKE_PREFIX_PATH="C:\ProgramData\chocolatey\lib\sdl2\tools"
+          msbuild SDL_TD.sln /p:Configuration=Release
+
+      - name: Run the application
+        run: |
+          cd build\Release
+          Start-Process ".\SDL_TD.exe"
