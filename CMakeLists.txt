@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.5)
 project(SDL_TD VERSION 0.1 LANGUAGES CXX)
 
 # Find SDL2
-find_package(SDL2 QUIET)
+find_package(SDL2 REQUIRED)
 find_package(SDL2_mixer REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_ttf REQUIRED)
 
 # Set SDL include directories and libraries
 set(SDL_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS})

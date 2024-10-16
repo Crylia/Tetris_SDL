@@ -9,6 +9,7 @@ extern "C" {
 
 #include "Renderer.hpp"
 #include "GameBoard.hpp"
+#include "Sound.hpp"
 
 using namespace std;
 
@@ -36,6 +37,8 @@ private:
 		bool startSequence = false;
 		bool quit = false;
 	} gameState;
+
+	const unique_ptr<Sound> sound;
 
 public:
 	Game( );

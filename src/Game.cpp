@@ -1,6 +1,6 @@
 #include "Game.hpp"
 
-Game::Game( ) : window(nullptr, SDL_DestroyWindow) { }
+Game::Game( ) : window(nullptr, SDL_DestroyWindow), sound(make_unique<Sound>( )) { }
 
 bool Game::init(const char* title, int w, int h) {
 	window.reset(SDL_CreateWindow(
@@ -34,15 +34,6 @@ bool Game::init(const char* title, int w, int h) {
 
 	handleWindowResize( );
 
-	bgm = std::shared_ptr<Mix_Music>(Mix_LoadMUS("assets/sound_tracks/bgm.mp3"), [ ](Mix_Music* m) {
-		Mix_FreeMusic(m);
-		});
-
-	if (!bgm) {
-		SDL_Log("Failed to load background music: %s", Mix_GetError( ));
-		return false;
-	}
-
 	return true;
 }
 
@@ -53,7 +44,7 @@ void Game::run( ) {
 		gameRenderer->renderStartScreen( );
 	}
 
-	Mix_PlayMusic(bgm.get( ), -1);
+	sound->PlayMusic(MusicName::MAIN_THEME);
 
 	lastUpdateTime = SDL_GetTicks( );
 	while (!gameState.gameover && !gameBoard->isCollision( )) {
@@ -62,15 +53,10 @@ void Game::run( ) {
 		update( );
 		render( );
 	}
-	gameState.gameover = true;
-	Mix_PauseMusic( );
 
-	Mix_Chunk* game_over = Mix_LoadWAV("assets/sound_effects/game_over.wav");
-	if (game_over == nullptr)
-		SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
-	else {
-		Mix_PlayChannel(-1, game_over, 0);
-	}
+	gameState.gameover = true;
+	sound->PauseMusic( );
+	sound->PlaySound(SoundName::GAME_OVER);
 
 	while (gameState.gameover) {
 		if (gameState.quit) return;
@@ -83,7 +69,6 @@ void Game::run( ) {
 
 void Game::inputHandler( ) {
 	SDL_Event event;
-	Mix_Chunk* movePieceSound = Mix_LoadWAV("assets/sound_effects/move_piece.wav");
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
 			SDL_Quit( );
@@ -93,43 +78,33 @@ void Game::inputHandler( ) {
 			case SDLK_LEFT:
 			case SDLK_a:
 				if (!gameState.gameover && !gameState.startSequence)
-					gameBoard->tryMoveCurrentTetromino(-1, 0);
-				if (movePieceSound == nullptr)
-					SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
-				else {
-					Mix_PlayChannel(-1, movePieceSound, 0);
-				}
+					if (gameBoard->tryMoveCurrentTetromino(-1, 0))
+						sound->PlaySound(SoundName::MOVE_PIECE);
 				break;
 			case SDLK_RIGHT:
 			case SDLK_d:
 				if (!gameState.gameover && !gameState.startSequence)
-					gameBoard->tryMoveCurrentTetromino(1, 0);
-				if (movePieceSound == nullptr)
-					SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
-				else {
-					Mix_PlayChannel(-1, movePieceSound, 0);
-				}
+					if (gameBoard->tryMoveCurrentTetromino(1, 0))
+						sound->PlaySound(SoundName::MOVE_PIECE);
 				break;
 			case SDLK_DOWN:
 			case SDLK_s:
-				if (!gameState.gameover && !gameState.startSequence)
+				if (!gameState.gameover && !gameState.startSequence) {
 					gameBoard->moveToBottom( );
+					sound->PlaySound(SoundName::PIECE_LANDED);
+				}
 				break;
 			case SDLK_SPACE:
 				if (!gameState.gameover && !gameState.startSequence)
-					gameBoard->tryRotateCurrentTetromino( );
+					if (gameBoard->tryRotateCurrentTetromino( ))
+						sound->PlaySound(SoundName::ROTATE_PIECE);
 				break;
 			case SDLK_ESCAPE:
 				break;
 			case SDLK_g:
 				if (gameState.startSequence) {
 					gameState.startSequence = false;
-					Mix_Chunk* menuSound = Mix_LoadWAV("assets/sound_effects/menu.wav");
-					if (menuSound == nullptr)
-						SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
-					else {
-						Mix_PlayChannel(-1, menuSound, 0);
-					}
+					sound->PlaySound(SoundName::MENU);
 				}
 				break;
 			case SDLK_r:
@@ -149,11 +124,10 @@ void Game::inputHandler( ) {
 				Mix_VolumeMusic(Mix_GetMusicVolume(bgm.get( )) - 8);
 				break;
 			case SDLK_m:
-				if (Mix_PausedMusic( ))
-					Mix_ResumeMusic( );
+				if (true)
+					sound->ResumeMusic( );
 				else
-					Mix_PauseMusic( );
-
+					sound->PauseMusic( );
 				break;
 			default:
 				break;

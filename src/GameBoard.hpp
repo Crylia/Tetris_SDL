@@ -8,6 +8,7 @@ extern "C" {
 #include <memory>
 #include <algorithm>
 #include "Tetromino.hpp"
+#include "Sound.hpp"
 
 class GameBoard {
 private:
@@ -27,13 +28,15 @@ private:
 	int level;
 	int lines;
 
+	const unique_ptr<Sound> sound;
+
 public:
 	GameBoard( );
 	void update( );
 	bool tryMoveCurrentTetromino(int dx, int dy);
-	void tryRotateCurrentTetromino( );
+	bool tryRotateCurrentTetromino( );
 	bool isValidPosition(const vector<vector<int>>& shape, int x, int y) const;
-	void moveToBottom( );
+	bool moveToBottom( );
 
 	const bool isCollision( ) const;
 	const int getScore( ) const;

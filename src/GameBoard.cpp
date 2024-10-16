@@ -2,7 +2,9 @@
 #include <iostream>
 
 GameBoard::GameBoard( )
-	: lockedTetrominos(20, vector<int>(10, 0)), lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(0), lines(0), collision(false) {
+	: lockedTetrominos(20, vector<int>(10, 0)),
+	lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(0), lines(0), collision(false),
+	sound(make_unique<Sound>( )) {
 	spawnNewTetromino( );
 }
 
@@ -16,20 +18,15 @@ bool GameBoard::tryMoveCurrentTetromino(int dx, int dy) {
 	return true;
 }
 
-void GameBoard::tryRotateCurrentTetromino( ) {
-	if (!currentTetromino) return;
+bool GameBoard::tryRotateCurrentTetromino( ) {
+	if (!currentTetromino) return false;
 	currentTetromino->rotate(*this);
-	if (checkCollision(*currentTetromino))
+	if (checkCollision(*currentTetromino)) {
 		for (int i = 0; i < 3; i++)
 			currentTetromino->rotate(*this);
-	else {
-		Mix_Chunk* rotateSound = Mix_LoadWAV("assets/sound_effects/rotate_piece.wav");
-		if (rotateSound == nullptr)
-			SDL_Log("Failed to play rotate sound effect: %s", Mix_GetError( ));
-		else {
-			Mix_PlayChannel(-1, rotateSound, 0);
-		}
+		return false;
 	}
+	return true;
 }
 
 bool GameBoard::checkCollision(const Tetromino& tetromino) const {
@@ -108,12 +105,7 @@ void GameBoard::lockTetromino( ) {
 		}
 	}
 
-	Mix_Chunk* pieceLanded = Mix_LoadWAV("assets/sound_effects/piece_landed.wav");
-	if (pieceLanded == nullptr)
-		SDL_Log("Failed to play sound effect: %s", Mix_GetError( ));
-	else {
-		Mix_PlayChannel(-1, pieceLanded, 0);
-	}
+	sound->PlaySound(SoundName::PIECE_LANDED);
 }
 
 void GameBoard::clearLines( ) {
