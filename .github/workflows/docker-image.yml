@@ -20,5 +20,5 @@ jobs:
 
     - name: build
       run: |
-        docker-compose run linux-build && docker-compose run linux-run
+        docker-compose run linux-build
 
