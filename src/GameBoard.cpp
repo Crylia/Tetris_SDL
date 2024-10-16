@@ -7,6 +7,7 @@ GameBoard::GameBoard( )
 }
 
 bool GameBoard::tryMoveCurrentTetromino(int dx, int dy) {
+	if (!currentTetromino) return;
 	currentTetromino->move(dx, dy);
 	if (checkCollision(*currentTetromino)) {
 		currentTetromino->move(-dx, -dy);
@@ -16,6 +17,7 @@ bool GameBoard::tryMoveCurrentTetromino(int dx, int dy) {
 }
 
 void GameBoard::tryRotateCurrentTetromino( ) {
+	if (!currentTetromino) return;
 	currentTetromino->rotate(*this);
 	if (checkCollision(*currentTetromino))
 		for (int i = 0; i < 3; i++)
@@ -181,10 +183,15 @@ void GameBoard::spawnNewTetromino( ) {
 		collision = true;
 		lockedTetrominos.clear( );
 		lockedColors.clear( );
+		currentTetromino = nullptr;
+		nextTetromino = nullptr;
 	}
 }
 
 void GameBoard::update( ) {
+	if (!currentTetromino)
+		spawnNewTetromino( );
+
 	if (!tryMoveCurrentTetromino(0, 1)) {
 		lockTetromino( );
 		clearLines( );
@@ -218,12 +225,7 @@ const shared_ptr<Tetromino> GameBoard::getNextTetromino( ) const { return nextTe
 
 const vector<vector<int>>& GameBoard::getLockedTetrominos( ) const { return lockedTetrominos; }
 const vector<vector<SDL_Color>>& GameBoard::getLockedColors( ) const { return lockedColors; }
-const Tetromino& GameBoard::getCurrentTetromino( ) const { return *currentTetromino; }
+const shared_ptr<Tetromino> GameBoard::getCurrentTetromino( ) const { return currentTetromino; }
 
-void GameBoard::reset( ) {
-	lockedTetrominos.clear( );
-	lockedColors.clear( );
-	score = 0;
-	level = 1;
-	collision = false;
-}
+const int GameBoard::getWidth( ) const { return width; }
+const int GameBoard::getHeight( ) const { return height; }

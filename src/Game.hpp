@@ -31,9 +31,11 @@ private:
 	Uint32 lastUpdateTime = 0;
 	int dropInterval = 1000;
 
-	bool gameOver;
-	bool startSequence;
-	bool quit;
+	struct GameState {
+		bool gameover = false;
+		bool startSequence = false;
+		bool quit = false;
+	} gameState;
 
 public:
 	Game( );
@@ -41,8 +43,9 @@ public:
 	bool init(const char* title, int w, int h);
 	void run( );
 	void restart( );
-	bool isGameOver( );
-	void setGameOver(bool value);
+
+	const bool isGameOver( ) const;
+	const void setGameOver(bool value);
 
 	const bool isGameQuit( ) const;
 };

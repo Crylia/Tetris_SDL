@@ -34,7 +34,6 @@ public:
 	void tryRotateCurrentTetromino( );
 	bool isValidPosition(const vector<vector<int>>& shape, int x, int y) const;
 	void moveToBottom( );
-	void reset( );
 
 	const bool isCollision( ) const;
 	const int getScore( ) const;
@@ -44,5 +43,8 @@ public:
 
 	const vector<vector<int>>& getLockedTetrominos( ) const;
 	const vector<vector<SDL_Color>>& getLockedColors( ) const;
-	const Tetromino& getCurrentTetromino( ) const;
+	const shared_ptr<Tetromino> getCurrentTetromino( ) const;
+
+	const int getWidth( ) const;
+	const int getHeight( ) const;
 };

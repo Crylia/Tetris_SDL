@@ -32,35 +32,60 @@ enum class TetrisAssets {
 
 class Renderer {
 private:
-	void drawGrid(const GameBoard& gameBoard);
-	void drawLockedBlocks(const GameBoard& gameBoard);
-	void drawTetromino(const Tetromino& tetromino);
+	void drawWall(const int w, const int h);
+	void drawLockedBlocks(const shared_ptr<GameBoard> gameBoard);
+	void drawTetromino(const shared_ptr<Tetromino> tetromino);
 	void drawScoreboard(int score, int level, int lines);
 
-	TetrisAssets shapeToAsset(const TetrominoShape shape);
+	const bool loadTexture(const string& filePath, const TetrisAssets shape);
 
-	shared_ptr<SDL_Renderer> renderer;
+	const TetrisAssets shapeToAsset(const TetrominoShape shape) const;
+
+	const shared_ptr<SDL_Renderer> renderer;
 
 	int blockSize;
-	int offsetX;
-	int offsetY;
-	int screenSpacing = 50;
-	int windowHeight = 0;
-	int windowWidth = 0;
+	int offsetX, offsetY;
+	int windowHeight = 0, windowWidth = 0;
 
-	unordered_map<TetrisAssets, SDL_Texture*> textures;
+	unordered_map<TetrisAssets, string> textures;
+
+	enum class HAlign {
+		LEFT,
+		CENTER,
+		RIGHT,
+	};
+
+	enum class VAlign {
+		TOP,
+		CENTER,
+		BOTTOM,
+	};
+
+	struct TextDimensions {
+		const int x, y, w, h;
+		const int fontSize;
+	};
+
+	struct TextureDimensions {
+		const int x, y, w, h;
+		const SDL_Color color;
+	};
+
 public:
 	Renderer(shared_ptr<SDL_Renderer> renderer, int w, int h);
 
-	void setRenderer(shared_ptr<SDL_Renderer> renderer);
-	void renderBoard(const GameBoard& gb);
+	void renderBoard(const shared_ptr<GameBoard> gameBoard);
 
-	bool loadTexture(const string& filePath, const TetrisAssets shape);
-	void renderTexture(const TetrisAssets shape, int x, int y, int width, int height);
 	void renderStartScreen( );
-	void renderGameOver(int score, int level, int lines);
-	void renderText(string text, int x, int y, int size, SDL_Color color);
-	void renderRightAlignedText(const std::string& text, int x, int y, int fontSize, const SDL_Color& color);
+	void renderGameOver(int gbWidth, int gbHeight);
+	const TextDimensions renderText(
+		const string& text, int x, int y, int fontSize,
+		SDL_Color color, HAlign textHAlign = HAlign::LEFT, VAlign textVAlign = VAlign::TOP
+	);
+	const TextureDimensions renderTexture(
+		const string& texturePath, int x, int y, int width = 0, int height = 0,
+		SDL_Color color = { 255,255,255 }, float scale = 1.0f, HAlign textHAlign = HAlign::LEFT, VAlign textVAlign = VAlign::TOP
+	);
 	void renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino);
 
 	const int getBlockSize( ) const;
