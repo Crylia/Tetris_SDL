@@ -34,6 +34,8 @@ private:
 
 	struct GameState {
 		bool gameover = false;
+		bool singlePlayer = false;
+		bool multiPlayer = false;
 		bool startSequence = false;
 		bool quit = false;
 	} gameState;

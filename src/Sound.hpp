@@ -38,9 +38,9 @@ public:
 	bool PlaySound(SoundName soundName, int loop = 0);
 	bool PlayMusic(MusicName musicName, int loop = -1);
 
-	bool PauseMusic( );
-	bool ResumeMusic( );
-	bool IncreaseVolume( );
-	bool DecreaseVolume( );
-
+	void PauseMusic( );
+	void ResumeMusic( );
+	void IncreaseVolume( );
+	void DecreaseVolume( );
+	bool IsMusicPlaying( );
 };

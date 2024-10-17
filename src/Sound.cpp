@@ -1,5 +1,8 @@
 #include "Sound.hpp"
 
+unique_ptr<unordered_map<SoundName, shared_ptr<Mix_Chunk>>> Sound::cachedSounds = nullptr;
+unique_ptr<unordered_map<MusicName, shared_ptr<Mix_Music>>> Sound::cachedMusic = nullptr;
+
 Sound::Sound( ) {
 	if (!cachedSounds) {
 		cachedSounds = make_unique<unordered_map<SoundName, shared_ptr<Mix_Chunk>>>( );
@@ -80,30 +83,26 @@ bool Sound::PlayMusic(MusicName musicName, int loop) {
 	return true;
 }
 
-bool Sound::PauseMusic( ) {
+void Sound::PauseMusic( ) {
 	if (Mix_PlayingMusic( ) != 0)
 		Mix_PauseMusic( );
 }
 
-bool Sound::ResumeMusic( ) {
-	if (Mix_PausedMusic( ) == 0)
+void Sound::ResumeMusic( ) {
+	if (Mix_PausedMusic( ))
 		Mix_ResumeMusic( );
 }
 
-bool Sound::IncreaseVolume( ) {
+void Sound::IncreaseVolume( ) {
 	int currentVolume = Mix_Volume(-1, -1);
-	if (currentVolume < MIX_MAX_VOLUME) {
+	if (currentVolume < MIX_MAX_VOLUME)
 		Mix_Volume(-1, currentVolume + 2);
-		return true;
-	}
-	return false;
 }
 
-bool Sound::DecreaseVolume( ) {
+void Sound::DecreaseVolume( ) {
 	int currentVolume = Mix_Volume(-1, -1);
-	if (currentVolume > 0) {
+	if (currentVolume > 0)
 		Mix_Volume(-1, currentVolume - 2);
-		return true;
-	}
-	return false;
 }
+
+bool Sound::IsMusicPlaying( ) { return Mix_PlayingMusic( ) && !Mix_PausedMusic( ); }

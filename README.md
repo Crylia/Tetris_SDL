@@ -2,7 +2,6 @@
 
 ## TODO
 
-- Game Over screen
 - Add Gamemodes
   - Gamemode selection screen
 - Save score

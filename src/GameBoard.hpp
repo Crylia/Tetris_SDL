@@ -22,7 +22,7 @@ private:
 	shared_ptr<Tetromino> currentTetromino;
 	shared_ptr<Tetromino> nextTetromino;
 	const int width = 10;
-	const int height = 20;
+	const int height = 18;
 	bool collision;
 	int score;
 	int level;
@@ -36,7 +36,7 @@ public:
 	bool tryMoveCurrentTetromino(int dx, int dy);
 	bool tryRotateCurrentTetromino( );
 	bool isValidPosition(const vector<vector<int>>& shape, int x, int y) const;
-	bool moveToBottom( );
+	void moveToBottom( );
 
 	const bool isCollision( ) const;
 	const int getScore( ) const;

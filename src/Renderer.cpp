@@ -1,7 +1,8 @@
 #include "Renderer.hpp"
 #include <iostream>
+#include <cmath>
 
-Renderer::Renderer(shared_ptr<SDL_Renderer> renderer, int w, int h) : renderer(renderer), blockSize(30), windowHeight(h), windowWidth(w) {
+Renderer::Renderer(shared_ptr<SDL_Renderer> renderer, int w, int h) : renderer(renderer), windowHeight(h), windowWidth(w) {
 	textures[TetrisAssets::SINGLE] = "assets/sprites/single.png";
 	textures[TetrisAssets::BORDER] = "assets/sprites/border.png";
 	textures[TetrisAssets::J] = "assets/sprites/J.png";
@@ -20,33 +21,80 @@ Renderer::Renderer(shared_ptr<SDL_Renderer> renderer, int w, int h) : renderer(r
 }
 
 void Renderer::renderBoard(const shared_ptr<GameBoard> gameBoard) {
+	drawScoreboard(gameBoard->getScore( ), gameBoard->getLevel( ), gameBoard->getLines( ));
 	drawWall(gameBoard->getWidth( ), gameBoard->getHeight( ));
 	drawLockedBlocks(gameBoard);
 	drawTetromino(gameBoard->getCurrentTetromino( ));
-	drawScoreboard(gameBoard->getScore( ), gameBoard->getLevel( ), gameBoard->getLines( ));
 }
 
 void Renderer::drawScoreboard(int score, int level, int lines) {
-	// 6 Because the gameBoard is 10 blocks, half that is 5 + 1 for the wall = 6
-	SDL_Rect blackRect = { 0, 0,  (windowWidth / 2) - (blockSize * 6) - blockSize / 8, windowHeight };
+	SDL_Rect blackRect = { 0, 0,  7 * scale, windowHeight };
 	SDL_SetRenderDrawColor(renderer.get( ), 0, 0, 0, 255);
 	SDL_RenderFillRect(renderer.get( ), &blackRect);
-
+	SDL_Color col{ 255,255,255 };
 	auto surf = unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load("assets/sprites/scoreboard.png"), SDL_FreeSurface);
-	renderTexture("assets/sprites/scoreboard.png", windowWidth - surf->w * static_cast<float>(windowHeight) / surf->h, 0, surf->w * static_cast<float>(windowHeight) / surf->h, windowHeight);
+	scoreBoardDimensions = renderTexture(
+		"assets/sprites/scoreboard.png",
+		windowWidth,
+		0,
+		surf->w * scale,
+		surf->h * scale,
+		col,
+		1.0f,
+		HAlign::RIGHT
+	);
 
-	renderText(fmt::format("{0}", score), windowWidth - 30, 97, 32, SDL_Color{ 0,0,0 }, HAlign::RIGHT);
-	renderText(fmt::format("{0}", level), windowWidth - 92, 230, 32, SDL_Color{ 0,0,0 });
-	renderText(fmt::format("{0}", lines), windowWidth - 92, 330, 32, SDL_Color{ 0,0,0 });
+	renderText(
+		fmt::format("{0}", score),
+		windowWidth - (7 * scale),
+		23 * scale,
+		8 * scale,
+		SDL_Color{ 0,0,0 },
+		HAlign::RIGHT,
+		VAlign::TOP
+	);
+	renderText(
+		fmt::format("{0}", level),
+		windowWidth - (15 * scale),
+		55 * scale,
+		8 * scale,
+		SDL_Color{ 0,0,0 },
+		HAlign::RIGHT,
+		VAlign::TOP
+	);
+	renderText(
+		fmt::format("{0}", lines),
+		windowWidth - (15 * scale),
+		79 * scale,
+		8 * scale,
+		SDL_Color{ 0,0,0 },
+		HAlign::RIGHT,
+		VAlign::TOP
+	);
 }
 
 void Renderer::drawWall(const int w, const int h) {
-	int innerBorderThickness = blockSize / 4;
+	SDL_Color color{ 165, 42, 42 }, gapColor{ 0,0,0 };
+	SDL_SetRenderDrawColor(renderer.get( ), color.r, color.g, color.b, 255);
 
-	for (int y = 0; y < (h + (innerBorderThickness * h)); ++y) {
-		SDL_Color color{ 165, 42, 42 };
-		renderTexture(textures[TetrisAssets::BORDER], offsetX - blockSize, (offsetY + y * blockSize) - (innerBorderThickness * y + 1), blockSize, blockSize, color);
-		renderTexture(textures[TetrisAssets::BORDER], offsetX + w * blockSize, (offsetY + y * blockSize) - (innerBorderThickness * y + 1), blockSize, blockSize, color);
+	for (int y = 0; y <= windowHeight; y += ((gridSize - 2) * scale)) {
+		leftBorder = renderTexture(
+			textures[TetrisAssets::BORDER],
+			gridSize * scale,
+			y,
+			gridSize * scale,
+			(gridSize * scale),
+			color
+		);
+		int t = ceil(static_cast<float>(scoreBoardDimensions->w) / scale / gridSize);
+		rightBorder = renderTexture(
+			textures[TetrisAssets::BORDER],
+			windowWidth - (ceil(static_cast<float>(scoreBoardDimensions->w) / scale / gridSize) + 1) * 8 * scale,
+			y,
+			gridSize * scale,
+			gridSize * scale,
+			color
+		);
 	}
 }
 
@@ -61,10 +109,10 @@ void Renderer::drawLockedBlocks(const shared_ptr<GameBoard> gameBoard) {
 				SDL_Color color = lockedColors[row][col];
 				renderTexture(
 					textures[shapeToAsset(static_cast<TetrominoShape>(blockType - 1))],
-					offsetX + col * blockSize,
-					offsetY + row * blockSize,
-					blockSize,
-					blockSize,
+					(col + 2) * gridSize * scale,
+					row * gridSize * scale,
+					gridSize * scale,
+					gridSize * scale,
 					color);
 			}
 		}
@@ -83,60 +131,60 @@ void Renderer::drawTetromino(const shared_ptr<Tetromino> tetromino) {
 			for (int i = 0; i < 4; ++i) {
 				renderTexture(
 					textures[TetrisAssets::I_MIDR],
-					offsetX + (x + i) * blockSize,
-					offsetY + y * blockSize,
-					blockSize,
-					blockSize,
+					(2 + x + i) * gridSize * scale,
+					y * gridSize * scale,
+					gridSize * scale,
+					gridSize * scale,
 					tetromino->getColor( )
 				);
 			}
 			renderTexture(
 				textures[TetrisAssets::I_ENDR],
-				offsetX + (x + 0) * blockSize,
-				offsetY + y * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x) * gridSize * scale,
+				y * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 			renderTexture(
 				textures[TetrisAssets::I_STARTR],
-				offsetX + (x + 3) * blockSize,
-				offsetY + y * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x + 3) * gridSize * scale,
+				y * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 		} else {
 			renderTexture(
 				textures[TetrisAssets::I_END],
-				offsetX + x * blockSize,
-				offsetY + y * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x) * gridSize * scale,
+				y * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 			renderTexture(
 				textures[TetrisAssets::I_MID],
-				offsetX + x * blockSize,
-				offsetY + (y + 1) * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x) * gridSize * scale,
+				(y + 1) * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 			renderTexture(
 				textures[TetrisAssets::I_MID],
-				offsetX + x * blockSize,
-				offsetY + (y + 2) * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x) * gridSize * scale,
+				(y + 2) * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 			renderTexture(
 				textures[TetrisAssets::I_START],
-				offsetX + x * blockSize,
-				offsetY + (y + 3) * blockSize,
-				blockSize,
-				blockSize,
+				(2 + x) * gridSize * scale,
+				(y + 3) * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				tetromino->getColor( )
 			);
 		}
@@ -147,10 +195,10 @@ void Renderer::drawTetromino(const shared_ptr<Tetromino> tetromino) {
 				if (shape[row][col] != 0) {
 					renderTexture(
 						textures[shapeToAsset(tetromino->getShapeEnumn( ))],
-						offsetX + (x + col) * blockSize,
-						offsetY + (y + row) * blockSize,
-						blockSize,
-						blockSize,
+						((x + col) * gridSize * scale) + leftBorder->x + leftBorder->w,
+						(y + row) * gridSize * scale,
+						gridSize * scale,
+						gridSize * scale,
 						tetromino->getColor( )
 					);
 				}
@@ -194,43 +242,76 @@ const TetrisAssets Renderer::shapeToAsset(const TetrominoShape shape) const {
 }
 
 void Renderer::renderStartScreen( ) {
-	SDL_SetRenderDrawColor(renderer.get( ), 248, 248, 248, 255);
+	SDL_SetRenderDrawColor(renderer.get( ), 0, 0, 0, 255);
 	SDL_RenderClear(renderer.get( ));
 
-	int borderThickness = 20;
-	SDL_Rect borderRect = {
-			borderThickness,
-			borderThickness,
-			windowWidth - 2 * borderThickness,
-			windowHeight - 2 * borderThickness
-	};
-	SDL_SetRenderDrawColor(renderer.get( ), 0, 0, 0, 255);
-	SDL_RenderDrawRect(renderer.get( ), &borderRect);
+	auto title = unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load("assets/sprites/title.png"), SDL_FreeSurface);
 
-	int titleWidth = static_cast<int>(windowWidth * 0.8f);
-	int titleHeight = static_cast<int>(titleWidth * 0.315f);
+	int titlePaddingX = 3, titlePaddingY = 8;
 
-	renderTexture(
+	TextureDimensions* titleDimensions = renderTexture(
 		"assets/sprites/title.png",
-		(windowWidth / 2) - (titleWidth / 2),
-		static_cast<int>(windowHeight * 0.160f),
-		titleWidth,
-		titleHeight
+		titlePaddingX * scale,
+		titlePaddingY * scale,
+		title->w * scale,
+		title->h * scale
 	);
 
 	auto titleBg = unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load("assets/sprites/title_bg.png"), SDL_FreeSurface);
 
-	int titleBgWidth = static_cast<int>(windowWidth * 0.8f);
-	int titleBgHeight = static_cast<int>(titleBgWidth * (static_cast<float>(titleBg->h) / titleBg->w));
+	SDL_Color col = { 255,255,255 };
 
-	renderTexture(
+	TextureDimensions* titleBgDimensions = renderTexture(
 		"assets/sprites/title_bg.png",
-		(windowWidth / 2) - (titleBgWidth / 2),
-		static_cast<int>(windowHeight * 0.5f),
-		titleBgWidth,
-		titleBgHeight
+		windowWidth / 2,
+		titleDimensions->y + titleDimensions->h,
+		titleBg->w * scale,
+		titleBg->h * scale,
+		col,
+		1.0f,
+		HAlign::CENTER
 	);
-	renderText("press G to start", (windowWidth / 2), windowHeight - 70, 16, SDL_Color{ 0, 0, 0 }, HAlign::CENTER);
+
+	SDL_SetRenderDrawColor(renderer.get( ), 248, 248, 248, 255);
+
+	int titleBgBottomPadding = 6;
+	int y = titleBgDimensions->y + titleBgDimensions->h + titleBgBottomPadding * scale;
+
+	SDL_Rect rect{
+		0,
+		y,
+		windowWidth,
+		windowHeight - y,
+	};
+
+	SDL_RenderFillRect(renderer.get( ), &rect);
+
+	TextDimensions player1TextDimendions = renderText(
+		"1player",
+		windowWidth / 4,
+		y + (1 * scale),
+		8 * scale,
+		SDL_Color{ 0, 0, 0 },
+		HAlign::CENTER
+	);
+
+	renderText(
+		"2player",
+		windowWidth * 3 / 4,
+		y + (1 * scale),
+		8 * scale,
+		SDL_Color{ 0, 0, 0 },
+		HAlign::CENTER
+	);
+
+	renderText(
+		"©1989 ®",
+		windowWidth / 2,
+		windowHeight - (14 * scale),
+		8 * scale,
+		SDL_Color{ 0, 0, 0 },
+		HAlign::CENTER
+	);
 
 	SDL_RenderPresent(renderer.get( ));
 }
@@ -268,29 +349,29 @@ void Renderer::renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino)
 		for (int i = 0; i < 4; ++i) {
 			renderTexture(
 				textures[TetrisAssets::I_MIDR],
-				(windowWidth - 155) + (x + i) * blockSize,
-				(windowHeight - 120) + y * blockSize,
-				blockSize,
-				blockSize,
+				(windowWidth - 155) + (x + i) * gridSize * scale,
+				(windowHeight - 120) + y * gridSize * scale,
+				gridSize * scale,
+				gridSize * scale,
 				nextTetromino->getColor( )
 			);
 		}
 
 		renderTexture(
 			textures[TetrisAssets::I_ENDR],
-			(windowWidth - 155) + x * blockSize,
-			(windowHeight - 120) + y * blockSize,
-			blockSize,
-			blockSize,
+			(windowWidth - 155) + x * gridSize * scale,
+			(windowHeight - 120) + y * gridSize * scale,
+			gridSize * scale,
+			gridSize * scale,
 			nextTetromino->getColor( )
 		);
 
 		renderTexture(
 			textures[TetrisAssets::I_STARTR],
-			(windowWidth - 155) + (x + 3) * blockSize,
-			(windowHeight - 120) + y * blockSize,
-			blockSize,
-			blockSize,
+			(windowWidth - 155) + (x + 3) * gridSize * scale,
+			(windowHeight - 120) + y * gridSize * scale,
+			gridSize * scale,
+			gridSize * scale,
 			nextTetromino->getColor( )
 		);
 
@@ -300,10 +381,10 @@ void Renderer::renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino)
 				if (nextTetromino->getShape( )[row][col] != 0) {
 					renderTexture(
 						textures[shapeToAsset(nextTetromino->getShapeEnumn( ))],
-						(windowWidth - 140) + col * blockSize,
-						(windowHeight - 130) + row * blockSize,
-						blockSize,
-						blockSize,
+						(windowWidth - 140) + col * gridSize * scale,
+						(windowHeight - 130) + row * gridSize * scale,
+						gridSize * scale,
+						gridSize * scale,
 						nextTetromino->getColor( )
 					);
 				}
@@ -312,7 +393,7 @@ void Renderer::renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino)
 	}
 }
 
-const Renderer::TextDimensions Renderer::renderText(const string& text, int x, int y, int fontSize, SDL_Color color, HAlign hAlign, VAlign vAlign) {
+Renderer::TextDimensions Renderer::renderText(const string& text, int x, int y, int fontSize, SDL_Color color, HAlign hAlign, VAlign vAlign) {
 	auto font = unique_ptr<TTF_Font, decltype(&TTF_CloseFont)>(TTF_OpenFont("assets/font/tetris-gb.ttf", fontSize), TTF_CloseFont);
 	if (!font) { SDL_Log("Failed to create font: %s", TTF_GetError( )); return{ 0,0,0,0 }; }
 
@@ -342,15 +423,15 @@ const Renderer::TextDimensions Renderer::renderText(const string& text, int x, i
 	return TextDimensions{ x, y, width, height };
 }
 
-const Renderer::TextureDimensions Renderer::renderTexture(
+Renderer::TextureDimensions* Renderer::renderTexture(
 	const string& texturePath, int x, int y, int width, int height,
 	SDL_Color color, float scale, HAlign textHAlign, VAlign textVAlign) {
 
 	auto surface = unique_ptr <SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load(texturePath.c_str( )), SDL_FreeSurface);
-	if (!surface) { SDL_Log("Failed to load surface from %s: %s", texturePath, SDL_GetError( ));return{ 0,0,0,0 }; }
+	if (!surface) { SDL_Log("Failed to load surface from %s: %s", texturePath, SDL_GetError( ));return nullptr; }
 
 	auto texture = unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)>(SDL_CreateTextureFromSurface(renderer.get( ), surface.get( )), SDL_DestroyTexture);
-	if (!texture) { SDL_Log("Failed to create texture from surface: %s", SDL_GetError( )); return{ 0,0,0,0 }; }
+	if (!texture) { SDL_Log("Failed to create texture from surface: %s", SDL_GetError( )); return nullptr; }
 
 	SDL_SetTextureBlendMode(texture.get( ), SDL_BLENDMODE_BLEND);
 	SDL_SetTextureColorMod(texture.get( ), color.r, color.g, color.b);
@@ -372,12 +453,12 @@ const Renderer::TextureDimensions Renderer::renderTexture(
 	SDL_Rect rect{ x,y,textureWidth,textureHeight };
 	SDL_RenderCopy(renderer.get( ), texture.get( ), nullptr, &rect);
 
-	return { x,y,textureWidth, textureHeight };
+	return new TextureDimensions{ x,y,textureWidth, textureHeight };
 }
 
-const int Renderer::getBlockSize( ) const { return blockSize; }
+const int Renderer::getScale( ) const { return scale; }
 
-void Renderer::setBlockSize(int newBlockSize) { blockSize = newBlockSize; }
+void Renderer::setScale(int newScale) { scale = newScale; }
 
 void Renderer::setOffset(int newX, int newY) {
 	offsetX = newX;

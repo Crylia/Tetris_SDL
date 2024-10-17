@@ -37,13 +37,11 @@ private:
 	void drawTetromino(const shared_ptr<Tetromino> tetromino);
 	void drawScoreboard(int score, int level, int lines);
 
-	const bool loadTexture(const string& filePath, const TetrisAssets shape);
-
 	const TetrisAssets shapeToAsset(const TetrominoShape shape) const;
 
 	const shared_ptr<SDL_Renderer> renderer;
 
-	int blockSize;
+	int scale = 5, gridSize = 8;
 	int offsetX, offsetY;
 	int windowHeight = 0, windowWidth = 0;
 
@@ -71,6 +69,9 @@ private:
 		const SDL_Color color;
 	};
 
+	TextureDimensions* scoreBoardDimensions;
+	TextureDimensions* leftBorder, * rightBorder;
+
 public:
 	Renderer(shared_ptr<SDL_Renderer> renderer, int w, int h);
 
@@ -78,18 +79,18 @@ public:
 
 	void renderStartScreen( );
 	void renderGameOver(shared_ptr<GameBoard> gameBoard);
-	const TextDimensions renderText(
+	TextDimensions renderText(
 		const string& text, int x, int y, int fontSize,
 		SDL_Color color, HAlign textHAlign = HAlign::LEFT, VAlign textVAlign = VAlign::TOP
 	);
-	const TextureDimensions renderTexture(
+	TextureDimensions* renderTexture(
 		const string& texturePath, int x, int y, int width = 0, int height = 0,
 		SDL_Color color = { 255,255,255 }, float scale = 1.0f, HAlign textHAlign = HAlign::LEFT, VAlign textVAlign = VAlign::TOP
 	);
 	void renderTetrominoPreview(const shared_ptr<Tetromino> nextTetromino);
 
-	const int getBlockSize( ) const;
-	void setBlockSize(int newBlockSize);
+	const int getScale( ) const;
+	void setScale(int newBlockSize);
 	void setOffset(int newX, int newY);
 	const int getOffsetX( ) const;
 	const int getOffsetY( ) const;

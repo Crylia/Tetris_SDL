@@ -2,8 +2,8 @@
 #include <iostream>
 
 GameBoard::GameBoard( )
-	: lockedTetrominos(20, vector<int>(10, 0)),
-	lockedColors(20, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(0), lines(0), collision(false),
+	: lockedTetrominos(18, vector<int>(10, 0)),
+	lockedColors(18, std::vector<SDL_Color>(10, { 0, 0, 0, 255 })), score(0), level(0), lines(0), collision(false),
 	sound(make_unique<Sound>( )) {
 	spawnNewTetromino( );
 }
@@ -162,7 +162,7 @@ void GameBoard::spawnNewTetromino( ) {
 	}
 
 	currentTetromino = move(nextTetromino);
-	currentTetromino->move(width / 2 - 1, 0);
+	currentTetromino->move(4, 0);
 
 	// Generate next tetromino
 	random_device dev;

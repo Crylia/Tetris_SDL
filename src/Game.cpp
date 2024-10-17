@@ -45,7 +45,6 @@ void Game::run( ) {
 	}
 
 	sound->PlayMusic(MusicName::MAIN_THEME);
-
 	lastUpdateTime = SDL_GetTicks( );
 	while (!gameState.gameover && !gameBoard->isCollision( )) {
 		if (gameState.quit) return;
@@ -57,7 +56,6 @@ void Game::run( ) {
 	gameState.gameover = true;
 	sound->PauseMusic( );
 	sound->PlaySound(SoundName::GAME_OVER);
-
 	while (gameState.gameover) {
 		if (gameState.quit) return;
 		SDL_SetRenderDrawColor(renderer.get( ), 248, 248, 248, 255);
@@ -124,10 +122,7 @@ void Game::inputHandler( ) {
 				Mix_VolumeMusic(Mix_GetMusicVolume(bgm.get( )) - 8);
 				break;
 			case SDLK_m:
-				if (true)
-					sound->ResumeMusic( );
-				else
-					sound->PauseMusic( );
+				sound->IsMusicPlaying( ) ? sound->PauseMusic( ) : sound->ResumeMusic( );
 				break;
 			default:
 				break;
@@ -154,11 +149,8 @@ void Game::handleWindowResize( ) {
 	int windowWidth, windowHeight;
 	SDL_GetWindowSize(window.get( ), &windowWidth, &windowHeight);
 
-	gameRenderer->setBlockSize(windowHeight / gameBoard->getHeight( ));
+	//gameRenderer->setScale(windowHeight / gameBoard->getHeight( ));
 
-	int offsetX = (windowWidth - gameBoard->getWidth( ) * gameRenderer->getBlockSize( )) / 2;
-	int offsetY = (windowHeight - gameBoard->getHeight( ) * gameRenderer->getBlockSize( )) / 2;
-	gameRenderer->setOffset(offsetX, offsetY);
 
 	gameRenderer->setWindowSize(windowWidth, windowHeight);
 }
